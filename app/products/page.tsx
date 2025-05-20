@@ -1,24 +1,179 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Star } from "lucide-react"
+import { CartModal } from "@/components/cart-modal"
+import { AddToCartButton } from "@/components/add-to-cart-button"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
+import { getProducts, type Product } from "@/data/products"
 
 export default function ProductsPage() {
-  // Données fictives des produits
-  const products = Array.from({ length: 12 }, (_, i) => ({
-    id: i + 1,
-    name: `Produit de Beauté ${i + 1}`,
-    category: i % 3 === 0 ? "Soins de la Peau" : i % 3 === 1 ? "Maquillage" : "Soins Capillaires",
-    price: 29.99 + i,
-    rating: 4 + (i % 2),
-    reviews: 10 + i,
-    image: `/placeholder.svg?height=400&width=400&text=Produit+${i + 1}`,
-  }))
+  // États pour les filtres et le tri
+  const [products, setProducts] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategories, setSelectedCategories] = useState<Record<string, boolean>>({
+    all: true,
+    skincare: false,
+    makeup: false,
+    haircare: false,
+  })
+  const [priceRange, setPriceRange] = useState({ min: "", max: "" })
+  const [selectedRatings, setSelectedRatings] = useState<Record<string, boolean>>({
+    "5": false,
+    "4": false,
+    "3": false,
+  })
+  const [sortOption, setSortOption] = useState("featured")
+  const [currentPage, setCurrentPage] = useState(1)
+  const productsPerPage = 9
+
+  // Charger les produits au chargement de la page
+  useEffect(() => {
+    const allProducts = getProducts()
+    setProducts(allProducts)
+    setFilteredProducts(allProducts)
+  }, [])
+
+  // Appliquer les filtres et le tri
+  useEffect(() => {
+    let result = [...products]
+
+    // Filtre de recherche
+    if (searchQuery) {
+      result = result.filter(
+        (product) =>
+          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          product.description.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    }
+
+    // Filtre de catégorie
+    if (!selectedCategories.all) {
+      const categories: string[] = []
+      if (selectedCategories.skincare) categories.push("skincare")
+      if (selectedCategories.makeup) categories.push("makeup")
+      if (selectedCategories.haircare) categories.push("haircare")
+
+      if (categories.length > 0) {
+        result = result.filter((product) => categories.includes(product.category))
+      }
+    }
+
+    // Filtre de prix
+    if (priceRange.min !== "") {
+      result = result.filter((product) => product.price >= Number(priceRange.min))
+    }
+    if (priceRange.max !== "") {
+      result = result.filter((product) => product.price <= Number(priceRange.max))
+    }
+
+    // Filtre d'évaluation
+    const ratings: number[] = []
+    if (selectedRatings["5"]) ratings.push(5)
+    if (selectedRatings["4"]) ratings.push(4)
+    if (selectedRatings["3"]) ratings.push(3)
+
+    if (ratings.length > 0) {
+      result = result.filter((product) => ratings.includes(Math.floor(product.rating)))
+    }
+
+    // Tri
+    switch (sortOption) {
+      case "newest":
+        // Supposons que les IDs plus élevés sont les plus récents
+        result.sort((a, b) => b.id - a.id)
+        break
+      case "price-low":
+        result.sort((a, b) => a.price - b.price)
+        break
+      case "price-high":
+        result.sort((a, b) => b.price - a.price)
+        break
+      case "rating":
+        result.sort((a, b) => b.rating - a.rating)
+        break
+      default: // featured
+        result.sort((a, b) => {
+          if (a.isBestseller && !b.isBestseller) return -1
+          if (!a.isBestseller && b.isBestseller) return 1
+          if (a.isNew && !b.isNew) return -1
+          if (!a.isNew && b.isNew) return 1
+          return 0
+        })
+    }
+
+    setFilteredProducts(result)
+    setCurrentPage(1) // Réinitialiser à la première page après filtrage
+  }, [products, searchQuery, selectedCategories, priceRange, selectedRatings, sortOption])
+
+  // Pagination
+  const indexOfLastProduct = currentPage * productsPerPage
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage
+  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct)
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage)
+
+  // Gestionnaires d'événements
+  const handleCategoryChange = (category: string, checked: boolean) => {
+    if (category === "all") {
+      setSelectedCategories({
+        all: checked,
+        skincare: false,
+        makeup: false,
+        haircare: false,
+      })
+    } else {
+      setSelectedCategories({
+        ...selectedCategories,
+        [category]: checked,
+        all: false,
+      })
+    }
+  }
+
+  const handleRatingChange = (rating: string, checked: boolean) => {
+    setSelectedRatings({
+      ...selectedRatings,
+      [rating]: checked,
+    })
+  }
+
+  const handlePriceChange = (type: "min" | "max", value: string) => {
+    setPriceRange({
+      ...priceRange,
+      [type]: value,
+    })
+  }
+
+  const handleApplyFilters = () => {
+    // Les filtres sont déjà appliqués via useEffect
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  // Fonction pour traduire les catégories
+  const translateCategory = (category: string) => {
+    switch (category) {
+      case "skincare":
+        return "Soins de la Peau"
+      case "makeup":
+        return "Maquillage"
+      case "haircare":
+        return "Soins Capillaires"
+      default:
+        return category
+    }
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -42,27 +197,7 @@ export default function ProductsPage() {
           </Link>
         </nav>
         <div className="flex items-center gap-4">
-          <Link href="/cart">
-            <Button variant="outline" size="icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <circle cx="8" cy="21" r="1" />
-                <circle cx="19" cy="21" r="1" />
-                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-              </svg>
-              <span className="sr-only">Panier</span>
-            </Button>
-          </Link>
+          <CartModal />
         </div>
       </header>
       <main className="flex-1">
@@ -89,14 +224,24 @@ export default function ProductsPage() {
                       <circle cx="11" cy="11" r="8" />
                       <path d="m21 21-4.3-4.3" />
                     </svg>
-                    <Input type="search" placeholder="Rechercher des produits..." className="pl-8" />
+                    <Input
+                      type="search"
+                      placeholder="Rechercher des produits..."
+                      className="pl-8"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                   </div>
                 </div>
                 <div>
                   <h3 className="font-semibold mb-4">Catégories</h3>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="all" />
+                      <Checkbox
+                        id="all"
+                        checked={selectedCategories.all}
+                        onCheckedChange={(checked) => handleCategoryChange("all", checked === true)}
+                      />
                       <label
                         htmlFor="all"
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -105,7 +250,11 @@ export default function ProductsPage() {
                       </label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="skincare" />
+                      <Checkbox
+                        id="skincare"
+                        checked={selectedCategories.skincare}
+                        onCheckedChange={(checked) => handleCategoryChange("skincare", checked === true)}
+                      />
                       <label
                         htmlFor="skincare"
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -114,7 +263,11 @@ export default function ProductsPage() {
                       </label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="makeup" />
+                      <Checkbox
+                        id="makeup"
+                        checked={selectedCategories.makeup}
+                        onCheckedChange={(checked) => handleCategoryChange("makeup", checked === true)}
+                      />
                       <label
                         htmlFor="makeup"
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -123,7 +276,11 @@ export default function ProductsPage() {
                       </label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="haircare" />
+                      <Checkbox
+                        id="haircare"
+                        checked={selectedCategories.haircare}
+                        onCheckedChange={(checked) => handleCategoryChange("haircare", checked === true)}
+                      />
                       <label
                         htmlFor="haircare"
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -140,13 +297,27 @@ export default function ProductsPage() {
                       <label htmlFor="min-price" className="text-sm">
                         Min
                       </label>
-                      <Input type="number" id="min-price" placeholder="0 €" className="h-8" />
+                      <Input
+                        type="number"
+                        id="min-price"
+                        placeholder="0 €"
+                        className="h-8"
+                        value={priceRange.min}
+                        onChange={(e) => handlePriceChange("min", e.target.value)}
+                      />
                     </div>
                     <div className="grid gap-2">
                       <label htmlFor="max-price" className="text-sm">
                         Max
                       </label>
-                      <Input type="number" id="max-price" placeholder="100 €" className="h-8" />
+                      <Input
+                        type="number"
+                        id="max-price"
+                        placeholder="100 €"
+                        className="h-8"
+                        value={priceRange.max}
+                        onChange={(e) => handlePriceChange("max", e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
@@ -154,7 +325,11 @@ export default function ProductsPage() {
                   <h3 className="font-semibold mb-4">Évaluation</h3>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="rating-5" />
+                      <Checkbox
+                        id="rating-5"
+                        checked={selectedRatings["5"]}
+                        onCheckedChange={(checked) => handleRatingChange("5", checked === true)}
+                      />
                       <label
                         htmlFor="rating-5"
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center"
@@ -167,7 +342,11 @@ export default function ProductsPage() {
                       </label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="rating-4" />
+                      <Checkbox
+                        id="rating-4"
+                        checked={selectedRatings["4"]}
+                        onCheckedChange={(checked) => handleRatingChange("4", checked === true)}
+                      />
                       <label
                         htmlFor="rating-4"
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center"
@@ -181,7 +360,11 @@ export default function ProductsPage() {
                       </label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="rating-3" />
+                      <Checkbox
+                        id="rating-3"
+                        checked={selectedRatings["3"]}
+                        onCheckedChange={(checked) => handleRatingChange("3", checked === true)}
+                      />
                       <label
                         htmlFor="rating-3"
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center"
@@ -198,16 +381,20 @@ export default function ProductsPage() {
                     </div>
                   </div>
                 </div>
-                <Button className="w-full">Appliquer les Filtres</Button>
+                <Button className="w-full" onClick={handleApplyFilters}>
+                  Appliquer les Filtres
+                </Button>
               </div>
             </aside>
 
             {/* Contenu principal avec liste de produits */}
             <div className="flex-1">
               <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Tous les Produits</h1>
+                <h1 className="text-2xl font-bold">
+                  {filteredProducts.length} Produit{filteredProducts.length !== 1 ? "s" : ""}
+                </h1>
                 <div className="flex items-center gap-4">
-                  <Select defaultValue="featured">
+                  <Select value={sortOption} onValueChange={setSortOption}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Trier par" />
                     </SelectTrigger>
@@ -223,22 +410,36 @@ export default function ProductsPage() {
               </div>
 
               {/* Grille de produits */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product) => (
-                  <Link href={`/products/${product.id}`} key={product.id}>
-                    <Card className="h-full overflow-hidden hover:shadow-md transition-shadow">
-                      <div className="aspect-square overflow-hidden">
-                        <Image
-                          src={product.image || "/placeholder.svg"}
-                          alt={product.name}
-                          width={400}
-                          height={400}
-                          className="object-cover w-full h-full transition-transform hover:scale-105"
-                        />
-                      </div>
+              {currentProducts.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {currentProducts.map((product) => (
+                    <Card key={product.id} className="h-full overflow-hidden hover:shadow-md transition-shadow">
+                      <Link href={`/products/${product.id}`} className="block">
+                        <div className="aspect-square overflow-hidden relative">
+                          <Image
+                            src={product.images[0] || "/placeholder.svg"}
+                            alt={product.name}
+                            width={400}
+                            height={400}
+                            className="object-cover w-full h-full transition-transform hover:scale-105"
+                          />
+                          {product.isNew && (
+                            <span className="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                              Nouveau
+                            </span>
+                          )}
+                          {product.isBestseller && (
+                            <span className="absolute top-2 right-2 bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                              Bestseller
+                            </span>
+                          )}
+                        </div>
+                      </Link>
                       <CardHeader className="p-4">
-                        <CardTitle className="text-lg">{product.name}</CardTitle>
-                        <CardDescription>{product.category}</CardDescription>
+                        <Link href={`/products/${product.id}`} className="block">
+                          <CardTitle className="text-lg">{product.name}</CardTitle>
+                          <CardDescription>{translateCategory(product.category)}</CardDescription>
+                        </Link>
                       </CardHeader>
                       <CardContent className="p-4 pt-0">
                         <div className="flex items-center gap-0.5">
@@ -246,72 +447,102 @@ export default function ProductsPage() {
                             <Star
                               key={i}
                               className={`h-4 w-4 ${
-                                i < product.rating ? "fill-primary text-primary" : "fill-muted stroke-muted-foreground"
+                                i < Math.floor(product.rating)
+                                  ? "fill-primary text-primary"
+                                  : i < product.rating
+                                    ? "fill-primary/50 text-primary/50"
+                                    : "fill-muted stroke-muted-foreground"
                               }`}
                             />
                           ))}
                           <span className="ml-1 text-xs text-muted-foreground">({product.reviews})</span>
                         </div>
                       </CardContent>
-                      <CardFooter className="p-4 pt-0 flex items-center justify-between">
+                      <CardFooter className="p-4 pt-0 flex flex-col gap-2">
                         <div className="font-semibold">{product.price.toFixed(2)} €</div>
-                        <Button size="sm" variant="secondary">
-                          Voir Détails
-                        </Button>
+                        <div className="flex gap-2 w-full">
+                          <Link href={`/products/${product.id}`} className="flex-1">
+                            <Button size="sm" variant="outline" className="w-full">
+                              Voir Détails
+                            </Button>
+                          </Link>
+                          <AddToCartButton product={product} size="sm" className="flex-1" />
+                        </div>
                       </CardFooter>
                     </Card>
-                  </Link>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <h3 className="text-lg font-medium">Aucun produit trouvé</h3>
+                  <p className="text-muted-foreground mt-2">
+                    Essayez de modifier vos filtres pour voir plus de résultats.
+                  </p>
+                </div>
+              )}
 
               {/* Pagination */}
-              <div className="flex items-center justify-center mt-8">
-                <nav className="flex items-center gap-1">
-                  <Button variant="outline" size="icon" disabled>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center mt-8">
+                  <nav className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
                     >
-                      <path d="m15 18-6-6 6-6" />
-                    </svg>
-                    <span className="sr-only">Précédent</span>
-                  </Button>
-                  <Button variant="outline" size="sm" className="font-medium">
-                    1
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    2
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    3
-                  </Button>
-                  <Button variant="outline" size="icon">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                      >
+                        <path d="m15 18-6-6 6-6" />
+                      </svg>
+                      <span className="sr-only">Précédent</span>
+                    </Button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        variant="outline"
+                        size="sm"
+                        className={currentPage === page ? "font-medium bg-muted" : ""}
+                        onClick={() => handlePageChange(page)}
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
                     >
-                      <path d="m9 18 6-6-6-6" />
-                    </svg>
-                    <span className="sr-only">Suivant</span>
-                  </Button>
-                </nav>
-              </div>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                      >
+                        <path d="m9 18 6-6-6-6" />
+                      </svg>
+                      <span className="sr-only">Suivant</span>
+                    </Button>
+                  </nav>
+                </div>
+              )}
             </div>
           </div>
         </div>

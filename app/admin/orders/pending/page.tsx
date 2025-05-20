@@ -1,4 +1,3 @@
-import { products } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,25 +14,42 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus } from "lucide-react";
 
-export default function ProductsPage() {
+// Données fictives pour les commandes en attente
+const pendingOrders = [
+  {
+    id: "ORD-001",
+    customer: "Jean Dupont",
+    date: "2023-05-15",
+    total: 129.99,
+  },
+  {
+    id: "ORD-004",
+    customer: "Sophie Lefebvre",
+    date: "2023-05-12",
+    total: 59.99,
+  },
+  {
+    id: "ORD-007",
+    customer: "Thomas Petit",
+    date: "2023-05-10",
+    total: 89.99,
+  },
+];
+
+export default function PendingOrdersPage() {
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Produits</h2>
-        <div className="flex items-center space-x-2">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Ajouter un produit
-          </Button>
-        </div>
+        <h2 className="text-3xl font-bold tracking-tight">
+          Commandes en attente
+        </h2>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Liste des produits</CardTitle>
+          <CardTitle>Liste des commandes en attente</CardTitle>
           <CardDescription>
-            Gérez vos produits, modifiez les prix et les stocks.
+            Gérez les commandes qui sont en attente de traitement.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -41,32 +57,30 @@ export default function ProductsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
-                <TableHead>Nom</TableHead>
-                <TableHead>Catégorie</TableHead>
-                <TableHead>Prix</TableHead>
-                <TableHead>Stock</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Total</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products.slice(0, 5).map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell className="font-medium">{product.id}</TableCell>
-                  <TableCell>{product.name}</TableCell>
-                  <TableCell>{product.category}</TableCell>
-                  <TableCell>€{product.price.toFixed(2)}</TableCell>
-                  <TableCell>{Math.floor(Math.random() * 100)}</TableCell>
+              {pendingOrders.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell className="font-medium">{order.id}</TableCell>
+                  <TableCell>{order.customer}</TableCell>
+                  <TableCell>{order.date}</TableCell>
+                  <TableCell>€{order.total.toFixed(2)}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button variant="outline" size="sm">
-                        Modifier
+                        Voir
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-red-500"
+                        className="bg-blue-50 text-blue-700 hover:bg-blue-100"
                       >
-                        Supprimer
+                        Marquer comme expédiée
                       </Button>
                     </div>
                   </TableCell>

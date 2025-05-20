@@ -1,8 +1,11 @@
-import Link from "next/link"
-import Image from "next/image"
-import { ArrowRight, Star } from "lucide-react"
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowRight, Star } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
+
+// Ajouter l'import pour les données de produits
+import { getFeaturedProducts, type Product } from "@/data/products";
 
 export default function LandingPage() {
   return (
@@ -43,8 +46,9 @@ export default function LandingPage() {
                     Découvrez Votre Beauté Naturelle
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Des produits de soins et cosmétiques premium qui mettent en valeur votre beauté naturelle. Sans
-                    cruauté et fabriqués avec des ingrédients biologiques.
+                    Des produits de soins et cosmétiques premium qui mettent en
+                    valeur votre beauté naturelle. Sans cruauté et fabriqués
+                    avec des ingrédients biologiques.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -62,7 +66,7 @@ export default function LandingPage() {
               </div>
               <div className="mx-auto w-full max-w-[500px] lg:max-w-none">
                 <Image
-                  src="/placeholder.svg?height=550&width=550"
+                  src="/beautebio.webp?height=550&width=550"
                   width={550}
                   height={550}
                   alt="Image Principale"
@@ -78,36 +82,54 @@ export default function LandingPage() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">Produits Vedettes</h2>
+                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
+                  Produits Vedettes
+                </h2>
                 <p className="max-w-[700px] text-muted-foreground md:text-xl">
-                  Découvrez nos produits de beauté les plus populaires, adorés par nos clients du monde entier
+                  Découvrez nos produits de beauté les plus populaires, adorés
+                  par nos clients du monde entier
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-8">
-              {/* Boucle pour afficher les produits vedettes */}
-              {[1, 2, 3, 4].map((i) => (
-                <Link href={`/products/${i}`} key={i} className="group relative overflow-hidden rounded-lg border">
+              {/* Afficher les produits vedettes */}
+              {getFeaturedProducts().map((product: Product) => (
+                <Link
+                  href={`/products/${product.id}`}
+                  key={product.id}
+                  className="group relative overflow-hidden rounded-lg border"
+                >
                   <div className="aspect-square overflow-hidden">
                     <Image
-                      src={`/placeholder.svg?height=400&width=400&text=Produit+${i}`}
+                      src={product.images[0] || "/placeholder.svg"}
                       width={400}
                       height={400}
-                      alt={`Produit ${i}`}
+                      alt={product.name}
                       className="object-cover transition-transform group-hover:scale-105"
                     />
                   </div>
                   <div className="p-4">
-                    <h3 className="font-semibold">Produit de Beauté {i}</h3>
+                    <h3 className="font-semibold">{product.name}</h3>
                     <div className="flex items-center gap-0.5 mt-1">
-                      <Star className="h-4 w-4 fill-primary" />
-                      <Star className="h-4 w-4 fill-primary" />
-                      <Star className="h-4 w-4 fill-primary" />
-                      <Star className="h-4 w-4 fill-primary" />
-                      <Star className="h-4 w-4 fill-muted stroke-muted-foreground" />
-                      <span className="ml-1 text-sm text-muted-foreground">(24)</span>
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-4 w-4 ${
+                            i < Math.floor(product.rating)
+                              ? "fill-primary"
+                              : i < product.rating
+                              ? "fill-primary/50"
+                              : "fill-muted stroke-muted-foreground"
+                          }`}
+                        />
+                      ))}
+                      <span className="ml-1 text-sm text-muted-foreground">
+                        ({product.reviews})
+                      </span>
                     </div>
-                    <p className="mt-2 font-medium">29,99 €</p>
+                    <p className="mt-2 font-medium">
+                      {product.price.toFixed(2)} €
+                    </p>
                   </div>
                 </Link>
               ))}
@@ -129,9 +151,12 @@ export default function LandingPage() {
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
-                  <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">Pourquoi Nous Choisir</h2>
+                  <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
+                    Pourquoi Nous Choisir
+                  </h2>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Nous croyons en des produits de beauté qui sont bons pour vous et pour la planète
+                    Nous croyons en des produits de beauté qui sont bons pour
+                    vous et pour la planète
                   </p>
                 </div>
                 <ul className="grid gap-6">
@@ -156,7 +181,8 @@ export default function LandingPage() {
                     <div className="space-y-1">
                       <h3 className="font-medium">100% Sans Cruauté</h3>
                       <p className="text-sm text-muted-foreground">
-                        Nous ne testons jamais sur les animaux et ne travaillons qu'avec des fournisseurs éthiques
+                        Nous ne testons jamais sur les animaux et ne travaillons
+                        qu'avec des fournisseurs éthiques
                       </p>
                     </div>
                   </li>
@@ -181,7 +207,8 @@ export default function LandingPage() {
                     <div className="space-y-1">
                       <h3 className="font-medium">Ingrédients Naturels</h3>
                       <p className="text-sm text-muted-foreground">
-                        Nos produits sont fabriqués avec des ingrédients biologiques et durables
+                        Nos produits sont fabriqués avec des ingrédients
+                        biologiques et durables
                       </p>
                     </div>
                   </li>
@@ -206,7 +233,8 @@ export default function LandingPage() {
                     <div className="space-y-1">
                       <h3 className="font-medium">Emballage Écologique</h3>
                       <p className="text-sm text-muted-foreground">
-                        Emballages recyclables et biodégradables pour réduire l'impact environnemental
+                        Emballages recyclables et biodégradables pour réduire
+                        l'impact environnemental
                       </p>
                     </div>
                   </li>
@@ -230,7 +258,9 @@ export default function LandingPage() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">Témoignages Clients</h2>
+                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
+                  Témoignages Clients
+                </h2>
                 <p className="max-w-[700px] text-muted-foreground md:text-xl">
                   Découvrez ce que nos clients disent de nos produits
                 </p>
@@ -248,8 +278,9 @@ export default function LandingPage() {
                     <Star className="h-5 w-5 fill-primary" />
                   </div>
                   <p className="mb-4">
-                    "J'utilise ces produits depuis 3 mois et ma peau n'a jamais été aussi belle. Les ingrédients
-                    naturels font vraiment la différence !"
+                    "J'utilise ces produits depuis 3 mois et ma peau n'a jamais
+                    été aussi belle. Les ingrédients naturels font vraiment la
+                    différence !"
                   </p>
                   <div className="flex items-center gap-4">
                     <div className="rounded-full overflow-hidden">
@@ -262,8 +293,10 @@ export default function LandingPage() {
                       />
                     </div>
                     <div>
-                      <h4 className="font-medium">Sophie Martin</h4>
-                      <p className="text-sm text-muted-foreground">Cliente Vérifiée</p>
+                      <h4 className="font-medium">Rania</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Cliente Vérifiée
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -277,10 +310,12 @@ export default function LandingPage() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">Rejoignez Notre Newsletter</h2>
+                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
+                  Rejoignez Notre Newsletter
+                </h2>
                 <p className="max-w-[700px] text-muted-foreground md:text-xl">
-                  Abonnez-vous pour recevoir des mises à jour sur les nouveaux produits, les offres spéciales et des
-                  conseils beauté
+                  Abonnez-vous pour recevoir des mises à jour sur les nouveaux
+                  produits, les offres spéciales et des conseils beauté
                 </p>
               </div>
               <div className="w-full max-w-md space-y-2">
@@ -293,7 +328,8 @@ export default function LandingPage() {
                   <Button type="submit">S'abonner</Button>
                 </form>
                 <p className="text-xs text-muted-foreground">
-                  En vous abonnant, vous acceptez nos Conditions d'Utilisation et notre Politique de Confidentialité.
+                  En vous abonnant, vous acceptez nos Conditions d'Utilisation
+                  et notre Politique de Confidentialité.
                 </p>
               </div>
             </div>
@@ -308,29 +344,42 @@ export default function LandingPage() {
             <div className="space-y-4">
               <h3 className="font-medium">BeautéHub</h3>
               <p className="text-sm text-muted-foreground">
-                Des produits de soins et cosmétiques premium qui mettent en valeur votre beauté naturelle.
+                Des produits de soins et cosmétiques premium qui mettent en
+                valeur votre beauté naturelle.
               </p>
             </div>
             <div className="space-y-4">
               <h3 className="font-medium">Boutique</h3>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link href="/products" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/products"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     Tous les Produits
                   </Link>
                 </li>
                 <li>
-                  <Link href="/products?category=skincare" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/products?category=skincare"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     Soins de la Peau
                   </Link>
                 </li>
                 <li>
-                  <Link href="/products?category=makeup" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/products?category=makeup"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     Maquillage
                   </Link>
                 </li>
                 <li>
-                  <Link href="/products?category=haircare" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/products?category=haircare"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     Soins Capillaires
                   </Link>
                 </li>
@@ -340,22 +389,34 @@ export default function LandingPage() {
               <h3 className="font-medium">Entreprise</h3>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link href="/about" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/about"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     À Propos
                   </Link>
                 </li>
                 <li>
-                  <Link href="/contact" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/contact"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     Contact
                   </Link>
                 </li>
                 <li>
-                  <Link href="/careers" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/careers"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     Carrières
                   </Link>
                 </li>
                 <li>
-                  <Link href="/blog" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/blog"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     Blog
                   </Link>
                 </li>
@@ -365,22 +426,34 @@ export default function LandingPage() {
               <h3 className="font-medium">Mentions Légales</h3>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link href="/terms" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/terms"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     Conditions d'Utilisation
                   </Link>
                 </li>
                 <li>
-                  <Link href="/privacy" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/privacy"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     Politique de Confidentialité
                   </Link>
                 </li>
                 <li>
-                  <Link href="/shipping" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/shipping"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     Politique d'Expédition
                   </Link>
                 </li>
                 <li>
-                  <Link href="/returns" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/returns"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     Retours et Remboursements
                   </Link>
                 </li>
@@ -393,5 +466,5 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }
